@@ -28,9 +28,9 @@ class speakers(pyext._class):
     else:
       # create or update remote
       try:
-        self.remotes[a[0]].update(a[1],a[2],a[3],a[4],a[5])
+        self.remotes[a[0]].update(a[1],a[2],a[3],a[4],a[5]) # tries to update in place
       except KeyError, e:
-        self.remotes[a[0]] = remote(a[1],a[2],a[3],a[4],a[5])
+        self.remotes[a[0]] = remote(a[1],a[2],a[3],a[4],a[5]) # otherwise creates new
       r = self.remotes[a[0]]
 
       # compute distances to speakers from this remote
@@ -38,9 +38,9 @@ class speakers(pyext._class):
 
       # build string: "'distances' player_id speaker_id_1 d_1 speaker_id_2 ..."
       out_str = "distances "
-      out_str += str(a[0])
+      out_str += str(a[0]) # player id
       for speaker_id, d in distances.iteritems():
-        out_str += " " + str(speaker_id) + " " + str(d)
+        out_str += " " + str(speaker_id) + " " + str(d) # speaker ids and distances
 
       self._outlet(1,out_str)
 
@@ -91,15 +91,16 @@ class remote:
     # filter dict of speakers to only fwd speakers
     fwd_speakers = { k: speakers[k] for k in fwd_speaker_ids }
 
-    # get distance for each fwd speaker, add to dict
+    # create dict of distances to speakers. distances are infinity for speakers behind the remote
     ds = {}
-    for speaker_id, speaker in fwd_speakers.iteritems():
-        ds[speaker_id] = self.distance_to(np.array((speaker.x,speaker.y,speaker.z)))
-    for speaker_id in np.setdiff1d(speakers.keys(),fwd_speaker_ids):
-        ds[speaker_id] = float('inf')
+    for speaker_id, speaker in fwd_speakers.iteritems(): # speakers in < 90 deg
+        ds[speaker_id] = self.distance_to(np.array((speaker.x,speaker.y,speaker.z))) # compute actual distance
+    for speaker_id in np.setdiff1d(speakers.keys(),fwd_speaker_ids): # other speakers (i.e. not in fwd_speaker_ids)
+        ds[speaker_id] = float('inf') # use infinity instead
     return ds
 
   def is_angle_less_90(self,speaker):
+    # if dot product of facing and displacement to speaker is positive, angle is less than 90
     if np.dot((self.dx,self.dy,self.dz), (speaker.x-self.x, speaker.y-self.y, speaker.z-self.z)) > 0:
       return True
     else:
